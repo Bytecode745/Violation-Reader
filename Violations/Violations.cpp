@@ -6,12 +6,13 @@
 #define __PAIR64__(high, low) (((uint64_t)high << 32) | (uint32_t)low)
 
 uintptr_t DecryptState(uintptr_t encryptedState) {
-	DWORD low = Read<DWORD>(encryptedState) - (DWORD)encryptedState;
-	DWORD high = Read<DWORD>(encryptedState + 0x4) - (DWORD)encryptedState;
+	DWORD low = Read<DWORD>(encryptedState) ^ (DWORD)encryptedState;
+	DWORD high = Read<DWORD>(encryptedState + 0x4) ^ (DWORD)encryptedState;
 	return __PAIR64__(high, low);
 }
 
 static inline uint8_t __ROL1__(uint8_t x, int n) { return (uint8_t)((x << (n & 7)) | (x >> ((8 - (n & 7)) & 7))); }
+static inline uint8_t __ROR1__(uint8_t x, int n) { return (uint8_t)((x >> (n & 7)) | (x << ((8 - (n & 7)) & 7))); }
 
 int main() {
 	pid = GetPIDByName("RobloxPlayerBeta.exe");
@@ -39,7 +40,8 @@ int main() {
 		uint32_t violations = 0;
 		for (int i = 0; i < 4; i++) {
 			uint8_t value = Read<uint8_t>(encodedTable + i);
-			value = __ROL1__(value, 4);
+			value ^= Read<uint8_t>(xorTable + i);
+			value = __ROR1__(value, 1);
 
 			violations |= (uint32_t)value << (i * 8);
 		}
